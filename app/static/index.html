@@ -1,0 +1,372 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Solicitudes de servicio</title>
+<style>
+  :root {
+    --ink: #1b2733; --muted: #5d6b79; --paper: #f2f5f7; --panel: #ffffff;
+    --line: #d7dfe5; --accent: #0e6e6e; --accent-dark: #0a5454; --danger: #b3261e;
+    --c-RECIBIDA: #5d6b79; --c-EN_REVISION: #a86a00; --c-EN_GESTION: #1f5fbf;
+    --c-FINALIZADA: #1d7a3e; --c-RECHAZADA: #b3261e;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--paper); color: var(--ink);
+         font: 15px/1.5 "Segoe UI", system-ui, -apple-system, Roboto, sans-serif; }
+  button, input, select, textarea { font: inherit; color: inherit; }
+  h1, h2, h3 { margin: 0; line-height: 1.25; }
+  .oculto { display: none !important; }
+
+  header.barra { background: var(--ink); color: #fff; padding: 12px 24px;
+                 display: flex; align-items: center; gap: 16px; }
+  header.barra h1 { font-size: 17px; font-weight: 600; flex: 1; }
+  header.barra .quien { font-size: 14px; opacity: .85; }
+  .btn { border: 1px solid var(--accent); background: var(--accent); color: #fff; padding: 8px 14px;
+         border-radius: 6px; cursor: pointer; }
+  .btn:hover { background: var(--accent-dark); }
+  .btn.sec { background: transparent; color: var(--accent); }
+  .btn.sec:hover { background: #e6f1f1; }
+  header.barra .btn.sec { color: #fff; border-color: #ffffff66; }
+  header.barra .btn.sec:hover { background: #ffffff1f; }
+  :focus-visible { outline: 3px solid #7cc4c4; outline-offset: 2px; }
+
+  .acceso { max-width: 400px; margin: 56px auto; background: var(--panel); border: 1px solid var(--line);
+            border-radius: 8px; padding: 28px; }
+  .acceso h2 { font-size: 20px; margin-bottom: 4px; }
+  .acceso p.sub { color: var(--muted); margin: 0 0 18px; }
+  .tabs { display: flex; gap: 4px; margin-bottom: 16px; border-bottom: 1px solid var(--line); }
+  .tabs button { background: none; border: 0; padding: 8px 12px; cursor: pointer; color: var(--muted);
+                 border-bottom: 3px solid transparent; }
+  .tabs button.activa { color: var(--ink); border-bottom-color: var(--accent); font-weight: 600; }
+  label { display: block; font-weight: 600; font-size: 14px; margin: 12px 0 4px; }
+  input, select, textarea { width: 100%; padding: 8px 10px; border: 1px solid #b9c4cd; border-radius: 6px;
+                            background: #fff; }
+  textarea { min-height: 96px; resize: vertical; }
+  .msg { margin-top: 12px; padding: 8px 10px; border-radius: 6px; font-size: 14px; }
+  .msg.error { background: #fbe9e7; color: var(--danger); }
+  .msg.ok { background: #e4f4ea; color: #145c2e; }
+  .demo { margin-top: 18px; font-size: 13px; color: var(--muted); border-top: 1px solid var(--line); padding-top: 12px; }
+  .demo code { background: #edf1f4; padding: 1px 5px; border-radius: 4px; }
+
+  main.app { display: grid; grid-template-columns: 380px 1fr; gap: 20px; padding: 20px 24px; max-width: 1280px; margin: 0 auto; }
+  @media (max-width: 860px) { main.app { grid-template-columns: 1fr; } }
+  .col { min-width: 0; }
+  .panel { background: var(--panel); border: 1px solid var(--line); border-radius: 8px; padding: 16px; }
+  .col .panel + .panel { margin-top: 16px; }
+  .cabecera { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 12px; }
+  .cabecera h2 { font-size: 16px; }
+  .filtro { width: auto; padding: 5px 8px; }
+
+  ul.lista { list-style: none; margin: 0; padding: 0; }
+  ul.lista li { border: 1px solid var(--line); border-radius: 6px; padding: 10px 12px; margin-bottom: 8px;
+                cursor: pointer; background: #fff; }
+  ul.lista li:hover { border-color: var(--accent); }
+  ul.lista li.sel { border-color: var(--accent); box-shadow: inset 3px 0 0 var(--accent); }
+  ul.lista .t { font-weight: 600; }
+  ul.lista .m { font-size: 13px; color: var(--muted); margin-top: 2px; display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+  .vacio { color: var(--muted); padding: 12px 0; }
+
+  .estado { display: inline-block; font-size: 12px; font-weight: 600; padding: 1px 8px; border-radius: 10px;
+            border: 1px solid currentColor; }
+  .est-RECIBIDA { color: var(--c-RECIBIDA); } .est-EN_REVISION { color: var(--c-EN_REVISION); }
+  .est-EN_GESTION { color: var(--c-EN_GESTION); } .est-FINALIZADA { color: var(--c-FINALIZADA); }
+  .est-RECHAZADA { color: var(--c-RECHAZADA); }
+
+  .resumen { display: grid; grid-template-columns: repeat(auto-fit, minmax(110px, 1fr)); gap: 8px; margin-bottom: 12px; }
+  .resumen .caja { border: 1px solid var(--line); border-radius: 6px; padding: 8px 10px; background: #fff; }
+  .resumen .n { font-size: 24px; font-weight: 700; line-height: 1.1; }
+  .resumen .l { font-size: 12px; color: var(--muted); }
+  table { width: 100%; border-collapse: collapse; font-size: 14px; margin-top: 4px; }
+  th, td { text-align: left; padding: 6px 8px; border-bottom: 1px solid var(--line); }
+  th { font-weight: 600; color: var(--muted); font-size: 13px; }
+
+  .detalle h2 { font-size: 20px; margin-bottom: 6px; }
+  .datos { display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: 8px 16px; margin: 12px 0; }
+  .datos dt { font-size: 12px; color: var(--muted); } .datos dd { margin: 0; font-weight: 600; }
+  .desc { white-space: pre-wrap; background: var(--paper); border-radius: 6px; padding: 10px 12px; }
+  .respuesta { border-left: 4px solid var(--c-FINALIZADA); background: #eaf6ee; padding: 10px 12px; border-radius: 0 6px 6px 0; margin-top: 12px; }
+  .respuesta.rechazada { border-left-color: var(--c-RECHAZADA); background: #fbeceb; }
+  .respuesta h3 { font-size: 14px; margin-bottom: 4px; }
+  h3.sub { font-size: 15px; margin: 20px 0 8px; }
+  ol.historial { list-style: none; margin: 0; padding: 0 0 0 14px; border-left: 2px solid var(--line); }
+  ol.historial li { position: relative; padding: 0 0 14px 14px; }
+  ol.historial li::before { content: ""; position: absolute; left: -22px; top: 6px; width: 10px; height: 10px;
+                            border-radius: 50%; background: var(--accent); border: 2px solid var(--paper); }
+  ol.historial .quien { font-weight: 600; } ol.historial .cuando { font-size: 12px; color: var(--muted); }
+  form.gestion { border: 1px solid var(--line); border-radius: 6px; padding: 4px 14px 14px; background: #fafcfc; }
+  form.nueva .fila { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+  .acciones { margin-top: 14px; display: flex; gap: 8px; }
+</style>
+</head>
+<body>
+
+<header class="barra oculto" id="barra">
+  <h1>Solicitudes de servicio</h1>
+  <span class="quien" id="quien"></span>
+  <button class="btn sec" id="btnSalir" type="button">Cerrar sesión</button>
+</header>
+
+<!-- Acceso -->
+<section class="acceso" id="acceso">
+  <h2>Solicitudes de servicio</h2>
+  <p class="sub">Presenta una solicitud y sigue su atención.</p>
+  <div class="tabs" role="tablist">
+    <button type="button" class="activa" id="tabLogin">Iniciar sesión</button>
+    <button type="button" id="tabRegistro">Crear cuenta</button>
+  </div>
+  <form id="formAcceso" novalidate>
+    <div id="campoNombre" class="oculto">
+      <label for="nombre">Nombre completo</label>
+      <input id="nombre" autocomplete="name">
+    </div>
+    <label for="email">Correo electrónico</label>
+    <input id="email" type="email" autocomplete="username">
+    <label for="password">Contraseña</label>
+    <input id="password" type="password" autocomplete="current-password">
+    <div class="acciones"><button class="btn" id="btnAcceso" type="submit">Entrar</button></div>
+    <div id="msgAcceso" class="msg oculto" role="alert"></div>
+  </form>
+  <div class="demo">
+    Usuarios de demostración (clave <code>demo123</code>):<br>
+    <code>solicitante@demo.com</code> · <code>personal@demo.com</code> · <code>coordinacion@demo.com</code>
+  </div>
+</section>
+
+<!-- Aplicación -->
+<main class="app oculto" id="app">
+  <div class="col">
+    <div class="panel oculto" id="panelResumen">
+      <div class="cabecera"><h2>Resumen general</h2></div>
+      <div class="resumen" id="resumenCajas"></div>
+      <table id="tablaResp"></table>
+    </div>
+    <div class="panel" id="panelLista">
+      <div class="cabecera">
+        <h2 id="tituloLista">Solicitudes</h2>
+        <select class="filtro" id="filtroEstado" aria-label="Filtrar por estado"></select>
+      </div>
+      <div class="acciones oculto" id="accNueva" style="margin:0 0 12px"><button class="btn" id="btnNueva" type="button">Nueva solicitud</button></div>
+      <ul class="lista" id="lista"></ul>
+    </div>
+  </div>
+  <div class="col"><div class="panel" id="panelDerecho"><p class="vacio">Selecciona una solicitud para ver su detalle.</p></div></div>
+</main>
+
+<script>
+const API = "";
+let meta = null, sesion = null, seleccionada = null, modoRegistro = false;
+
+const $ = (id) => document.getElementById(id);
+const ETIQ = { RECIBIDA: "Recibida", EN_REVISION: "En revisión", EN_GESTION: "En gestión",
+               FINALIZADA: "Finalizada", RECHAZADA: "Rechazada" };
+const ROLES = { solicitante: "Solicitante", personal: "Personal de atención", coordinacion: "Coordinación" };
+
+// Crea elementos sin usar innerHTML con datos del usuario (evita inyección de código)
+function h(tag, props = {}, ...hijos) {
+  const el = document.createElement(tag);
+  for (const [k, v] of Object.entries(props)) {
+    if (k === "class") el.className = v;
+    else if (k.startsWith("on")) el.addEventListener(k.slice(2), v);
+    else el.setAttribute(k, v);
+  }
+  for (const c of hijos.flat()) if (c != null) el.append(c.nodeType ? c : document.createTextNode(c));
+  return el;
+}
+const fecha = (iso) => new Date(iso).toLocaleString("es-CO", { dateStyle: "medium", timeStyle: "short" });
+const badge = (e) => h("span", { class: "estado est-" + e }, ETIQ[e] || e);
+
+async function api(ruta, { metodo = "GET", cuerpo } = {}) {
+  const opts = { method: metodo, headers: {} };
+  if (sesion) opts.headers.Authorization = "Bearer " + sesion.token;
+  if (cuerpo) { opts.headers["Content-Type"] = "application/json"; opts.body = JSON.stringify(cuerpo); }
+  const r = await fetch(API + ruta, opts);
+  let datos = null;
+  try { datos = await r.json(); } catch (_) {}
+  if (!r.ok) {
+    let texto = "Ocurrió un error";
+    if (datos && typeof datos.detail === "string") texto = datos.detail;
+    else if (datos && Array.isArray(datos.detail)) texto = datos.detail.map(d => d.msg.replace("Value error, ", "")).join(". ");
+    if (r.status === 401 && sesion) { salir(); }
+    throw new Error(texto);
+  }
+  return datos;
+}
+function aviso(el, texto, tipo = "error") {
+  el.textContent = texto; el.className = "msg " + tipo; el.classList.remove("oculto");
+}
+
+/* ---------- Acceso ---------- */
+function modo(registro) {
+  modoRegistro = registro;
+  $("tabLogin").classList.toggle("activa", !registro);
+  $("tabRegistro").classList.toggle("activa", registro);
+  $("campoNombre").classList.toggle("oculto", !registro);
+  $("btnAcceso").textContent = registro ? "Crear cuenta" : "Entrar";
+  $("msgAcceso").classList.add("oculto");
+}
+$("tabLogin").onclick = () => modo(false);
+$("tabRegistro").onclick = () => modo(true);
+
+$("formAcceso").addEventListener("submit", async (e) => {
+  e.preventDefault();
+  const email = $("email").value.trim(), password = $("password").value;
+  try {
+    if (modoRegistro) {
+      await api("/auth/registro", { metodo: "POST", cuerpo: { nombre: $("nombre").value, email, password } });
+    }
+    const r = await api("/auth/login", { metodo: "POST", cuerpo: { email, password } });
+    sesion = { token: r.access_token, usuario: r.usuario };
+    sessionStorage.setItem("sesion", JSON.stringify(sesion));
+    iniciarApp();
+  } catch (err) { aviso($("msgAcceso"), err.message); }
+});
+
+function salir() {
+  sesion = null; seleccionada = null; sessionStorage.removeItem("sesion");
+  $("app").classList.add("oculto"); $("barra").classList.add("oculto");
+  $("acceso").classList.remove("oculto"); $("password").value = "";
+}
+$("btnSalir").onclick = salir;
+
+/* ---------- App ---------- */
+async function iniciarApp() {
+  if (!meta) meta = await api("/meta");
+  const u = sesion.usuario;
+  $("acceso").classList.add("oculto");
+  $("barra").classList.remove("oculto"); $("app").classList.remove("oculto");
+  $("quien").textContent = u.nombre + " · " + ROLES[u.rol];
+  $("tituloLista").textContent = u.rol === "solicitante" ? "Mis solicitudes" : "Solicitudes";
+  $("accNueva").classList.toggle("oculto", u.rol !== "solicitante");
+  $("panelResumen").classList.toggle("oculto", u.rol !== "coordinacion");
+  const f = $("filtroEstado"); f.replaceChildren(h("option", { value: "" }, "Todos los estados"));
+  meta.estados.forEach(e => f.append(h("option", { value: e }, ETIQ[e])));
+  $("panelDerecho").replaceChildren(h("p", { class: "vacio" }, "Selecciona una solicitud para ver su detalle."));
+  await refrescar();
+}
+$("filtroEstado").onchange = cargarLista;
+$("btnNueva").onclick = mostrarFormNueva;
+
+async function refrescar() {
+  await cargarLista();
+  if (sesion.usuario.rol === "coordinacion") await cargarResumen();
+}
+
+async function cargarLista() {
+  const est = $("filtroEstado").value;
+  const lista = $("lista");
+  try {
+    const datos = await api("/solicitudes" + (est ? "?estado=" + est : ""));
+    lista.replaceChildren();
+    if (!datos.length) lista.append(h("li", { class: "vacio", style: "border:0;cursor:default" },
+      sesion.usuario.rol === "solicitante" ? "Aún no tienes solicitudes. Crea la primera." : "No hay solicitudes con ese filtro."));
+    for (const s of datos) {
+      lista.append(h("li", { class: s.id === seleccionada ? "sel" : "", tabindex: "0", onclick: () => abrir(s.id),
+          onkeydown: (e) => { if (e.key === "Enter") abrir(s.id); } },
+        h("div", { class: "t" }, "#" + s.id + " " + s.titulo),
+        h("div", { class: "m" }, badge(s.estado), s.categoria, " · ", s.responsable ? "Atiende: " + s.responsable : "Sin responsable")));
+    }
+  } catch (err) { lista.replaceChildren(h("li", { class: "msg error" }, err.message)); }
+}
+
+async function cargarResumen() {
+  const r = await api("/resumen");
+  const cajas = $("resumenCajas"); cajas.replaceChildren();
+  cajas.append(h("div", { class: "caja" }, h("div", { class: "n" }, r.total), h("div", { class: "l" }, "Total")));
+  for (const e of meta.estados)
+    cajas.append(h("div", { class: "caja" }, h("div", { class: "n" }, r.por_estado[e]), h("div", { class: "l" }, ETIQ[e])));
+  cajas.append(h("div", { class: "caja" }, h("div", { class: "n" }, r.sin_responsable), h("div", { class: "l" }, "Sin responsable")));
+  const t = $("tablaResp");
+  t.replaceChildren(h("tr", {}, h("th", {}, "Responsable"), h("th", {}, "Total"), h("th", {}, "Abiertas")));
+  if (!r.por_responsable.length) t.append(h("tr", {}, h("td", { colspan: "3", class: "vacio" }, "Aún no hay solicitudes asignadas.")));
+  r.por_responsable.forEach(x => t.append(h("tr", {}, h("td", {}, x.responsable), h("td", {}, x.total), h("td", {}, x.abiertas))));
+}
+
+function mostrarFormNueva() {
+  seleccionada = null; cargarLista();
+  const msg = h("div", { class: "msg oculto", role: "alert" });
+  const titulo = h("input", { id: "n_titulo", maxlength: "120" });
+  const desc = h("textarea", { id: "n_desc", maxlength: "2000" });
+  const cat = h("select", { id: "n_cat" }, meta.categorias.map(c => h("option", { value: c }, c)));
+  const prio = h("select", { id: "n_prio" }, meta.prioridades.map(p => h("option", { value: p, ...(p === "media" ? { selected: "" } : {}) }, p[0].toUpperCase() + p.slice(1))));
+  const form = h("form", { class: "nueva", novalidate: "" },
+    h("h2", {}, "Nueva solicitud"),
+    h("label", { for: "n_titulo" }, "Título"), titulo,
+    h("label", { for: "n_desc" }, "Describe lo que necesitas"), desc,
+    h("div", { class: "fila" },
+      h("div", {}, h("label", { for: "n_cat" }, "Categoría"), cat),
+      h("div", {}, h("label", { for: "n_prio" }, "Prioridad"), prio)),
+    h("div", { class: "acciones" }, h("button", { class: "btn", type: "submit" }, "Enviar solicitud")),
+    msg);
+  form.addEventListener("submit", async (e) => {
+    e.preventDefault();
+    try {
+      const s = await api("/solicitudes", { metodo: "POST", cuerpo: {
+        titulo: titulo.value, descripcion: desc.value, categoria: cat.value, prioridad: prio.value } });
+      await refrescar(); await abrir(s.id);
+    } catch (err) { aviso(msg, err.message); }
+  });
+  $("panelDerecho").replaceChildren(form);
+}
+
+async function abrir(id) {
+  seleccionada = id;
+  try {
+    const [s, hist] = await Promise.all([api("/solicitudes/" + id), api("/solicitudes/" + id + "/historial")]);
+    const esStaff = sesion.usuario.rol !== "solicitante";
+    const cont = h("div", { class: "detalle" },
+      h("h2", {}, "#" + s.id + " " + s.titulo), badge(s.estado),
+      h("dl", { class: "datos" },
+        h("div", {}, h("dt", {}, "Solicitante"), h("dd", {}, s.solicitante)),
+        h("div", {}, h("dt", {}, "Responsable"), h("dd", {}, s.responsable || "Sin asignar")),
+        h("div", {}, h("dt", {}, "Categoría"), h("dd", {}, s.categoria)),
+        h("div", {}, h("dt", {}, "Prioridad"), h("dd", {}, s.prioridad)),
+        h("div", {}, h("dt", {}, "Registrada"), h("dd", {}, fecha(s.creada))),
+        h("div", {}, h("dt", {}, "Última actualización"), h("dd", {}, fecha(s.actualizada)))),
+      h("div", { class: "desc" }, s.descripcion));
+    if (s.respuesta) cont.append(h("div", { class: "respuesta" + (s.estado === "RECHAZADA" ? " rechazada" : "") },
+      h("h3", {}, s.estado === "RECHAZADA" ? "Respuesta: solicitud rechazada" : "Respuesta final"), s.respuesta));
+    cont.append(h("h3", { class: "sub" }, "Historial de atención"),
+      h("ol", { class: "historial" }, hist.map(a => h("li", {},
+        h("div", {}, h("span", { class: "quien" }, a.usuario), " ", badge(a.estado_resultante)),
+        h("div", {}, a.comentario), h("div", { class: "cuando" }, fecha(a.fecha))))));
+    if (esStaff) cont.append(h("h3", { class: "sub" }, "Gestionar"), formGestion(s));
+    $("panelDerecho").replaceChildren(cont);
+    cargarLista();
+  } catch (err) { $("panelDerecho").replaceChildren(h("div", { class: "msg error" }, err.message)); }
+}
+
+function formGestion(s) {
+  if (!s.transiciones_posibles.length)
+    return h("p", { class: "vacio" }, "Esta solicitud está cerrada y no admite más cambios.");
+  const msg = h("div", { class: "msg oculto", role: "alert" });
+  const sel = h("select", { id: "g_estado" },
+    h("option", { value: "" }, "Solo agregar una nota (sin cambiar el estado)"),
+    s.transiciones_posibles.map(e => h("option", { value: e }, "Pasar a: " + ETIQ[e])));
+  const com = h("textarea", { id: "g_com", style: "min-height:60px" });
+  const resp = h("textarea", { id: "g_resp", style: "min-height:60px" });
+  const bloqueResp = h("div", { class: "oculto" }, h("label", { for: "g_resp" }, "Respuesta para el solicitante"), resp);
+  sel.onchange = () => bloqueResp.classList.toggle("oculto", !["FINALIZADA", "RECHAZADA"].includes(sel.value));
+  const form = h("form", { class: "gestion", novalidate: "" },
+    h("label", { for: "g_estado" }, "Acción"), sel,
+    h("label", { for: "g_com" }, "Comentario"), com, bloqueResp,
+    h("div", { class: "acciones" }, h("button", { class: "btn", type: "submit" }, "Registrar acción")), msg);
+  form.addEventListener("submit", async (e) => {
+    e.preventDefault();
+    try {
+      await api("/solicitudes/" + s.id + "/acciones", { metodo: "POST", cuerpo: {
+        comentario: com.value, estado_nuevo: sel.value || null, respuesta: resp.value || null } });
+      await refrescar(); await abrir(s.id);
+    } catch (err) { aviso(msg, err.message); }
+  });
+  return form;
+}
+
+// Si ya había sesión en esta pestaña, se reanuda
+(async () => {
+  const guardada = sessionStorage.getItem("sesion");
+  if (guardada) { sesion = JSON.parse(guardada); try { await api("/auth/me"); await iniciarApp(); } catch (_) { salir(); } }
+})();
+</script>
+</body>
+</html>
